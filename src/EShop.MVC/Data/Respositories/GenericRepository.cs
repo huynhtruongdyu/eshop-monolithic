@@ -13,13 +13,24 @@ namespace EShop.MVC.Data.Respositories
 
         void Update(TEntity entity);
 
-        void Delete(Guid id);
+        void Delete(TEntity entity); // Delete by entity
+
+        void Delete(Guid id); // Delete by ID
+
+        Task DeleteAsync(Guid id, CancellationToken cancellationToken = default); // Async version
     }
 
-    public class GenericRepository<TEntity>(ApplicationDbContext dbContext) : IGenericRepository<TEntity> where TEntity : class, IEntity
+    public class GenericRepository<TEntity> : IGenericRepository<TEntity>
+        where TEntity : class, IEntity
     {
-        protected readonly ApplicationDbContext dbContext = dbContext;
-        protected readonly DbSet<TEntity> dbSet = dbContext.Set<TEntity>();
+        protected readonly ApplicationDbContext dbContext;
+        protected readonly DbSet<TEntity> dbSet;
+
+        public GenericRepository(ApplicationDbContext dbContext)
+        {
+            this.dbContext = dbContext;
+            this.dbSet = dbContext.Set<TEntity>();
+        }
 
         public Task<TEntity?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         {
@@ -41,9 +52,26 @@ namespace EShop.MVC.Data.Respositories
             dbSet.Update(entity);
         }
 
+        // Delete by entity (no database hit needed)
+        public void Delete(TEntity entity)
+        {
+            dbSet.Remove(entity);
+        }
+
+        // Delete by ID (synchronous - might hit database)
         public void Delete(Guid id)
         {
             var entity = dbSet.Find(id);
+            if (entity != null)
+            {
+                dbSet.Remove(entity);
+            }
+        }
+
+        // Async delete by ID
+        public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+        {
+            var entity = await dbSet.FindAsync(id, cancellationToken);
             if (entity != null)
             {
                 dbSet.Remove(entity);

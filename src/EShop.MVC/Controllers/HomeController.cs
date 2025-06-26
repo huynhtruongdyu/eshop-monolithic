@@ -1,20 +1,23 @@
 using System.Diagnostics;
 using EShop.MVC.Models;
+using EShop.MVC.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EShop.MVC.Controllers
 {
-    public class HomeController : Controller
+    public class HomeController(ILogger<HomeController> logger, ICatalogService catalogService) : Controller
     {
-        private readonly ILogger<HomeController> _logger;
-
-        public HomeController(ILogger<HomeController> logger)
+        public async Task<IActionResult> IndexAsync()
         {
-            _logger = logger;
-        }
-
-        public IActionResult Index()
-        {
+            var products = await catalogService.GetAllProductsAsync();
+            if (!products.Any())
+            {
+                await catalogService.CreateProductAsync(new Data.Domain.Product
+                {
+                    Name = "Sample product 1",
+                    Price = (decimal)99.0
+                });
+            }
             return View();
         }
 
